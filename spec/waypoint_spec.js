@@ -29,7 +29,6 @@ describe('<Waypoint>', function() {
       onEnter: jasmine.createSpy('onEnter'),
       onLeave: jasmine.createSpy('onLeave'),
       onPositionChange: jasmine.createSpy('onPositionChange'),
-      threshold: 0,
     };
 
     this.parentStyle = {
@@ -335,12 +334,12 @@ describe('<Waypoint>', function() {
       });
     });
 
-    describe('with a non-zero threshold', () => {
+    describe('with a non-zero bottom offset', () => {
       beforeEach(() => {
-        this.props.threshold = 0.1;
+        this.props.bottomOffset = '-10%';
       });
 
-      describe('when scrolling down just below the threshold', () => {
+      describe('when scrolling down just below the bottom offset', () => {
         beforeEach(() => {
           this.component = this.subject();
           this.props.onPositionChange.calls.reset();
@@ -360,7 +359,7 @@ describe('<Waypoint>', function() {
         });
       });
 
-      describe('when scrolling down past the threshold', () => {
+      describe('when scrolling down past the bottom offset', () => {
         beforeEach(() => {
           this.component = this.subject();
           this.props.onPositionChange.calls.reset();

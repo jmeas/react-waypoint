@@ -10,19 +10,29 @@ const POSITIONS = {
 
 const propTypes = {
   debug: PropTypes.bool,
-  // threshold is percentage of the height of the visible part of the
-  // scrollable ancestor (e.g. 0.1)
-  threshold: PropTypes.number,
   onEnter: PropTypes.func,
   onLeave: PropTypes.func,
   onPositionChange: PropTypes.func,
   fireOnRapidScroll: PropTypes.bool,
   scrollableAncestor: PropTypes.any,
-  throttleHandler: PropTypes.func
+  throttleHandler: PropTypes.func,
+  // `topOffset` can either be a number, in which case its a distance from the
+  // top of the container, or a percentage, in which case it's a percentage of
+  // the height of the visible part of the scrollable ancestor (e.g. 0.1)
+  topOffset: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+  ]),
+  // `bottomOffset` is like `topOffset`, but for the bottom of the container.
+  bottomOffset: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+  ]),
 };
 
 const defaultProps = {
-  threshold: 0,
+  topOffset: '0px',
+  bottomOffset: '0px',
   onEnter() {},
   onLeave() {},
   onPositionChange() {},
@@ -184,6 +194,45 @@ export default class Waypoint extends React.Component {
   }
 
   /**
+   * @param {string} offset Blah blah blah
+   * @param {string} contextHeight Blah blah blah
+   * @return {number} A number representing `offset` converted into pixels.
+   */
+  _computeOffsetPixels(offset, contextHeight) {
+    const pixelOffset = this._parseOffsetAsPixels(offset);
+    if (typeof pixelOffset === 'number') {
+      return pixelOffset;
+    }
+
+    const percentOffset = this._parseOffsetAsPercentage(offset);
+    if (typeof percentOffset === 'number') {
+      return percentOffset * contextHeight;
+    }
+  }
+
+  /**
+   * @param {string} str Blah blah blah
+   * @return {number} A number representing `str` converted into pixels.
+   */
+  _parseOffsetAsPixels(str) {
+    if (!isNaN(parseFloat(str)) && isFinite(str)) {
+      return parseFloat(str);
+    } else if (str.slice(-2) === 'px') {
+      return parseFloat(str.slice(0, -2));
+    }
+  }
+
+  /**
+   * @param {string} str Blah blah blah
+   * @return {number} The numeric version of `str`.
+   */
+  _parseOffsetAsPercentage(str) {
+    if (str.slice(-1) === '%') {
+      return parseFloat(str.slice(0, -1)) / 100;
+    }
+  }
+
+  /**
    * @return {string} The current position of the waypoint in relation to the
    *   visible portion of the scrollable parent. One of `POSITIONS.above`,
    *   `POSITIONS.below`, or `POSITIONS.inside`.
@@ -206,23 +255,26 @@ export default class Waypoint extends React.Component {
       debugLog('scrollableAncestor height', contextHeight);
       debugLog('scrollableAncestor scrollTop', contextScrollTop);
     }
-    const thresholdPx = contextHeight * this.props.threshold;
+
+    const {bottomOffset, topOffset} = this.props;
+    const topOffsetPx = this._computeOffsetPixels(topOffset, contextHeight);
+    const bottomOffsetPx = this._computeOffsetPixels(bottomOffset, contextHeight);
     const contextBottom = contextScrollTop + contextHeight;
 
     if (contextHeight === 0) {
       return Waypoint.invisible;
     }
 
-    if (contextScrollTop <= waypointTop + thresholdPx &&
-        waypointTop - thresholdPx <= contextBottom) {
+    if (contextScrollTop <= waypointTop - topOffsetPx &&
+        waypointTop + bottomOffsetPx <= contextBottom) {
       return Waypoint.inside;
     }
 
-    if (contextBottom < waypointTop - thresholdPx) {
+    if (contextBottom < waypointTop + bottomOffsetPx) {
       return Waypoint.below;
     }
 
-    if (waypointTop + thresholdPx < contextScrollTop) {
+    if (waypointTop - topOffsetPx < contextScrollTop) {
       return Waypoint.above;
     }
 
