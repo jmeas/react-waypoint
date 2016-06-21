@@ -17,8 +17,12 @@ const propTypes = {
   scrollableAncestor: PropTypes.any,
   throttleHandler: PropTypes.func,
   // `topOffset` can either be a number, in which case its a distance from the
-  // top of the container, or a percentage, in which case it's a percentage of
-  // the height of the visible part of the scrollable ancestor (e.g. 0.1)
+  // top of the container in pixels, or a string value. Valid string values are
+  // of the form "20px", which is parsed as pixels, or "20%", which is parsed
+  // as a percentage of the height of the containing element.
+  // For instance, if you pass "-20%", and the containing element is 100px tall,
+  // then the waypoint will be triggered when it has been scrolled 20px beyond
+  // the top of the containing element.
   topOffset: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.number,
@@ -194,8 +198,8 @@ export default class Waypoint extends React.Component {
   }
 
   /**
-   * @param {string} offset Blah blah blah
-   * @param {string} contextHeight Blah blah blah
+   * @param {string|number} offset Blah blah blah
+   * @param {number} contextHeight Blah blah blah
    * @return {number} A number representing `offset` converted into pixels.
    */
   _computeOffsetPixels(offset, contextHeight) {
@@ -211,8 +215,17 @@ export default class Waypoint extends React.Component {
   }
 
   /**
-   * @param {string} str Blah blah blah
-   * @return {number} A number representing `str` converted into pixels.
+   * Attempts to parse the offset provided as a prop as a pixel value. If
+   * parsing fails, then `undefined` is returned. Three examples of values that
+   * will be successfully parsed are:
+   * `20`
+   * "20px"
+   * "20"
+   *
+   * @param {string|number} str A string of the form "{number}" or "{number}px",
+   *   or just a number.
+   * @return {number|undefined} The numeric version of `str`. Undefined if `str`
+   *   was neither a number nor string ending in "px".
    */
   _parseOffsetAsPixels(str) {
     if (!isNaN(parseFloat(str)) && isFinite(str)) {
@@ -223,8 +236,16 @@ export default class Waypoint extends React.Component {
   }
 
   /**
-   * @param {string} str Blah blah blah
-   * @return {number} The numeric version of `str`.
+   * Attempts to parse the offset provided as a prop as a percentage. For
+   * instance, if the component has been provided with the string "20%" as
+   * a value of one of the offset props. If the value matches, then it returns
+   * a numeric version of the prop. For instance, "20%" would become `0.2`.
+   * If `str` isn't a percentage, then `undefined` will be returned.
+   *
+   * @param {string} str The value of an offset prop to be converted to a
+   *   number.
+   * @return {number|undefined} The numeric version of `str`. Undefined if `str`
+   *   was not a percentage.
    */
   _parseOffsetAsPercentage(str) {
     if (str.slice(-1) === '%') {
